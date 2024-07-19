@@ -1,18 +1,28 @@
 import sqlite3
 
-# Connect to SQLite database (it will create it if it doesn't exist)
-conn = sqlite3.connect('ebookstore.db')
-c = conn.cursor()
-
-# Create the book table if it doesn't exist
-c.execute('''
+# Constants for SQL queries
+CREATE_TABLE_QUERY = '''
 CREATE TABLE IF NOT EXISTS book (
     id INTEGER PRIMARY KEY,
     title TEXT NOT NULL,
     author TEXT NOT NULL,
     qty INTEGER NOT NULL
 )
-''')
+'''
+INSERT_BOOK_QUERY = 'INSERT INTO book (title, author, qty) VALUES (?, ?, ?)'
+INSERT_INITIAL_BOOKS_QUERY = 'INSERT OR IGNORE INTO book VALUES (?, ?, ?, ?)'
+UPDATE_BOOK_TITLE_QUERY = 'UPDATE book SET title = ? WHERE id = ?'
+UPDATE_BOOK_AUTHOR_QUERY = 'UPDATE book SET author = ? WHERE id = ?'
+UPDATE_BOOK_QTY_QUERY = 'UPDATE book SET qty = ? WHERE id = ?'
+DELETE_BOOK_QUERY = 'DELETE FROM book WHERE id = ?'
+SEARCH_BOOKS_QUERY = 'SELECT * FROM book WHERE title LIKE ? OR author LIKE ?'
+
+# Connect to SQLite database (it will create it if it doesn't exist)
+conn = sqlite3.connect('ebookstore.db')
+c = conn.cursor()
+
+# Create the book table if it doesn't exist
+c.execute(CREATE_TABLE_QUERY)
 
 # Function to populate the table with initial data
 def populate_initial_data():
@@ -24,7 +34,7 @@ def populate_initial_data():
         (3005, 'Alice in Wonderland', 'Lewis Carroll', 12)
     ]
     # Insert initial data
-    c.executemany('INSERT OR IGNORE INTO book VALUES (?, ?, ?, ?)', initial_books)
+    c.executemany(INSERT_INITIAL_BOOKS_QUERY, initial_books)
     conn.commit()
 
 # Function to add a new book
@@ -32,7 +42,7 @@ def add_book():
     title = input("Enter the book title: ")
     author = input("Enter the author: ")
     qty = int(input("Enter the quantity: "))
-    c.execute('INSERT INTO book (title, author, qty) VALUES (?, ?, ?)', (title, author, qty))
+    c.execute(INSERT_BOOK_QUERY, (title, author, qty))
     conn.commit()
     print("Book added successfully!")
 
@@ -43,25 +53,25 @@ def update_book():
     author = input("Enter the new author (or press Enter to keep current): ")
     qty = input("Enter the new quantity (or press Enter to keep current): ")
     if title:
-        c.execute('UPDATE book SET title = ? WHERE id = ?', (title, id))
+        c.execute(UPDATE_BOOK_TITLE_QUERY, (title, id))
     if author:
-        c.execute('UPDATE book SET author = ? WHERE id = ?', (author, id))
+        c.execute(UPDATE_BOOK_AUTHOR_QUERY, (author, id))
     if qty:
-        c.execute('UPDATE book SET qty = ? WHERE id = ?', (qty, id))
+        c.execute(UPDATE_BOOK_QTY_QUERY, (qty, id))
     conn.commit()
     print("Book updated successfully!")
 
 # Function to delete a book
 def delete_book():
     id = int(input("Enter the book ID to delete: "))
-    c.execute('DELETE FROM book WHERE id = ?', (id,))
+    c.execute(DELETE_BOOK_QUERY, (id,))
     conn.commit()
     print("Book deleted successfully!")
 
 # Function to search for a book
 def search_books():
     keyword = input("Enter a keyword to search for (title/author): ")
-    c.execute("SELECT * FROM book WHERE title LIKE ? OR author LIKE ?", ('%' + keyword + '%', '%' + keyword + '%'))
+    c.execute(SEARCH_BOOKS_QUERY, ('%' + keyword + '%', '%' + keyword + '%'))
     results = c.fetchall()
     if results:
         for row in results:
